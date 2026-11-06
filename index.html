@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pengelola Keuangan</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: Arial, sans-serif; }
+        body { background-color: #f4f6f8; padding: 15px; }
+        .card { background: white; padding: 15px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 15px; }
+        h2 { text-align: center; color: #333; margin-bottom: 15px; }
+        label { font-size: 14px; font-weight: bold; color: #555; }
+        select, input { width: 100%; padding: 10px; margin: 5px 0 15px 0; border: 1px solid #ccc; border-radius: 5px; font-size: 14px; }
+        button { width: 100%; padding: 12px; background: #007bff; color: white; border: none; border-radius: 5px; font-weight: bold; font-size: 15px; cursor: pointer; }
+        button:active { background: #0056b3; }
+        .saldo-box { background: #28a745; color: white; text-align: center; padding: 15px; border-radius: 8px; font-size: 18px; font-weight: bold; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border-bottom: 1px solid #ddd; padding: 8px; text-align: left; font-size: 13px; }
+        th { background: #f8f9fa; }
+        .btn-hapus { background: #dc3545; color: white; border: none; padding: 5px 8px; border-radius: 3px; font-size: 11px; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <h2>Catatan Keuangan</h2>
+
+    <!-- Form Input -->
+    <div class="card">
+        <label>Tipe Transaksi</label>
+        <select id="tipe">
+            <option value="Pemasukan">Pemasukan (+)</option>
+            <option value="Pengeluaran">Pengeluaran (-)</option>
+        </select>
+
+        <label>Keterangan</label>
+        <input type="text" id="keterangan" placeholder="Misal: Uang Saku / Beli Jajan">
+
+        <label>Jumlah (Rp)</label>
+        <input type="number" id="jumlah" placeholder="Masukkan angka saja">
+
+        <button onclick="tambahTransaksi()">Simpan Transaksi</button>
+    </div>
+
+    <!-- Total Saldo -->
+    <div class="saldo-box" id="saldoDisplay">
+        Sisa Saldo: Rp 0
+    </div>
+
+    <!-- Tabel Data -->
+    <div class="card" style="margin-top: 15px;">
+        <h3>Riwayat Transaksi</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Tipe</th>
+                    <th>Ket</th>
+                    <th>Jumlah</th>
+                    <th>Aksi</th>
+                </tr>
+            </thead>
+            <tbody id="tabelBody"></tbody>
+        </table>
+    </div>
+
+    <script>
+        // Muat data dari localStorage HP
+        let transaksiData = JSON.parse(localStorage.getItem('keuangan_data')) || [];
+
+        function simpanKeStorage() {
+            localStorage.setItem('keuangan_data', JSON.stringify(transaksiData));
+            updateTampilan();
+        }
+
+        function tambahTransaksi() {
+            const tipe = document.getElementById('tipe').value;
+            const ket = document.getElementById('keterangan').value.trim();
+            const jumlah = parseFloat(document.getElementById('jumlah').value);
+
+            if (!ket || isNaN(jumlah) || jumlah <= 0) {
+                alert('Mohon isi keterangan dan jumlah angka dengan benar!');
+                return;
+            }
+
+            const item = {
+                id: Date.now(),
+                tipe: tipe,
+                keterangan: ket,
+                jumlah: jumlah
+            };
+
+            transaksiData.push(item);
+            simpanKeStorage();
+
+            document.getElementById('keterangan').value = '';
+            document.getElementById('jumlah').value = '';
+        }
+
+        function hapusTransaksi(id) {
+            transaksiData = transaksiData.filter(item => item.id !== id);
+            simpanKeStorage();
+        }
+
+        function updateTampilan() {
+            const tbody = document.getElementById('tabelBody');
+            tbody.innerHTML = '';
+
+            let totalPemasukan = 0;
+            let totalPengeluaran = 0;
+
+            transaksiData.forEach(item => {
+                if (item.tipe === 'Pemasukan') {
+                    totalPemasukan += item.jumlah;
+                } else {
+                    totalPengeluaran += item.jumlah;
+                }
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td style="color: ${item.tipe === 'Pemasukan' ? 'green' : 'red'}; font-weight:bold;">${item.tipe}</td>
+                    <td>${item.keterangan}</td>
+                    <td>Rp ${item.jumlah.toLocaleString('id-ID')}</td>
+                    <td><button class="btn-hapus" onclick="hapusTransaksi(${item.id})">Hapus</button></td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            const saldo = totalPemasukan - totalPengeluaran;
+            document.getElementById('saldoDisplay').innerText = `Sisa Saldo: Rp ${saldo.toLocaleString('id-ID')}`;
+        }
+
+        // Jalankan saat pertama kali dibuka
+        updateTampilan();
+    </script>
+</body>
+</html>
